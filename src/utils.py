@@ -13,7 +13,7 @@ def tab_printer(args):
     """
     args = vars(args)
     keys = sorted(args.keys())
-    t = Texttable() 
+    t = Texttable()
     t.add_rows([["Parameter", "Value"]] + [[k.replace("_"," ").capitalize(),args[k]] for k in keys])
     print(t.draw())
 
@@ -22,7 +22,7 @@ def read_node_labels(args):
     Reading the graphs from disk.
     :param args: Arguments object.
     :return identifiers: Hash table of unique node labels in the dataset.
-    :return class_number: Number of unique graph classes in the dataset. 
+    :return class_number: Number of unique graph classes in the dataset.
     """
     print("\nCollecting unique node labels.\n")
     labels = set()
@@ -39,6 +39,7 @@ def read_node_labels(args):
     identifiers = {label:i for i, label in enumerate(list(labels))}
     class_number = len(targets)
     print("\n\nThe number of graph classes is: " +str(class_number) + ".\n")
+    print("The number of node label is: " +str(len(identifiers)) + ".\n")
     return identifiers, class_number
 
 def create_logs(args):
@@ -54,7 +55,7 @@ def create_logs(args):
 
 def create_features(data, identifiers):
     """
-     Creates a tensor of node features. 
+     Creates a tensor of node features.
     :param data: Hash table with data.
     :param identifiers: Node labels mapping.
     :return graph: NetworkX object.

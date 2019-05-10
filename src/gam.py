@@ -56,6 +56,8 @@ class StepNetworkLayer(torch.nn.Module):
          normalized_attention_spread = attention_spread / attention_spread.sum()
          normalized_attention_spread = normalized_attention_spread.detach().numpy().reshape(-1)
          label = np.random.choice(np.arange(len(self.identifiers)), p=normalized_attention_spread)
+         # label = np.random.choice(self.identifiers.keys(), p=normalized_attention_spread)
+         # label = list(self.identifiers.keys())[np.random.choice(np.arange(len(self.identifiers)), p=normalized_attention_spread)]
          return label
 
      def make_step(self, node, graph, features, labels, inverse_labels):
@@ -63,17 +65,21 @@ class StepNetworkLayer(torch.nn.Module):
          :param node: Source node for step.
          :param graph: NetworkX graph.
          :param features: Feature matrix.
-         :param labels: Node labels hash table. 
+         :param labels: Node labels hash table.
          :param inverse_labels: Inverse node label hash table.
          """
          original_neighbors = set(nx.neighbors(graph, node))
          label = self.sample_node_label(original_neighbors, graph, features)
          new_node = random.choice(list(set(original_neighbors).intersection(set(inverse_labels[str(label)]))))
          new_node_attributes = torch.zeros((len(self.identifiers),1))
-         new_node_attributes[labels[str(label)],0] = 1.0
+         # print(label, self.identifiers, labels)
+         # new_node_attributes[self.identifiers[label],0] = 1.0
+         # new_node_attributes[labels[str(label)],0] = 1.0
+         # new_node_attributes[label,0] = 1.0
          attention_score = self.attention[labels[str(label)]]
+         attention_score = self.attention[label]
          return new_node_attributes, new_node, attention_score
-         
+
      def forward(self, data, graph, features,node):
          """
          Making a forward propagation step.
@@ -83,7 +89,7 @@ class StepNetworkLayer(torch.nn.Module):
          :param node: Base node where the step is taken from.
          :return state: State vector.
          :return node: New node to move to.
-         :return attention_score: Attention score of chosen node. 
+         :return attention_score: Attention score of chosen node.
          """
          feature_row, node, attention_score = self.make_step(node, graph, features, data["labels"], data["inverse_labels"])
          hidden_attention = torch.mm(self.attention.view(1, -1), self.theta_step_1)
@@ -91,20 +97,20 @@ class StepNetworkLayer(torch.nn.Module):
          combined_hidden_representation = torch.cat((hidden_attention, hidden_node), dim = 1)
          state = torch.mm(combined_hidden_representation, self.theta_step_3).view(1, 1, self.args.combined_dimensions)
          return state, node, attention_score
-         
-class DownStreamNetworkLayer(torch.nn.Module):      
+
+class DownStreamNetworkLayer(torch.nn.Module):
     """
     Neural network layer for attention update and node label assignment.
     """
     def __init__(self, args, target_number, identifiers):
         """
-        
+
         :param args:
         :param target_number:
         :param identifiers:
         """
         super(DownStreamNetworkLayer, self).__init__()
-        self.args = args 
+        self.args = args
         self.target_number = target_number
         self.identifiers = identifiers
         self.create_parameters()
@@ -126,7 +132,7 @@ class DownStreamNetworkLayer(torch.nn.Module):
         predictions = torch.mm(hidden_state.view(1,-1), self.theta_classification)
         attention = torch.nn.functional.softmax(torch.mm(hidden_state.view(1,-1), self.theta_rank), dim = 1)
         return predictions, attention
- 
+
 class GAM(torch.nn.Module):
     """
     Graph Attention Machine class.
@@ -172,7 +178,7 @@ class GAM(torch.nn.Module):
 
 class GAMTrainer(object):
     """
-    Object to train a GAM model. 
+    Object to train a GAM model.
     """
     def __init__(self, args):
         self.args = args
